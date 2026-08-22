@@ -1,0 +1,37 @@
+@layer utilities {
+  .responsive-button {
+    @apply w-full sm:w-auto;
+  }
+
+  .responsive-content {
+    @apply min-w-0 max-w-full;
+  }
+
+  .surface-border {
+    @apply border border-border/70;
+  }
+
+  .surface-card {
+    @apply rounded-[var(--radius-xl)] border border-border/70 bg-card/90 shadow-[var(--shadow-sm)] backdrop-blur-sm;
+  }
+
+  .section-copy {
+    @apply max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8;
+  }
+
+  .section-title {
+    @apply text-balance text-4xl font-semibold leading-[1.04] tracking-[-0.045em] text-foreground sm:text-5xl lg:text-6xl;
+  }
+
+  .eyebrow {
+    @apply text-sm font-semibold uppercase tracking-[0.18em] text-primary;
+  }
+
+  .interactive-outline {
+    @apply transition-all duration-200 hover:border-primary/35 hover:bg-accent/70 hover:text-foreground;
+  }
+
+  .premium-ring {
+    @apply ring-1 ring-white/10 shadow-[var(--shadow-md)];
+  }
+}

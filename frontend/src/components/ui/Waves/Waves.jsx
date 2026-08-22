@@ -126,6 +126,7 @@ const Waves = ({
     yGap,
   });
   const frameIdRef = useRef(null);
+  const resizeObserverRef = useRef(null);
 
   useEffect(() => {
     configRef.current = {
@@ -156,10 +157,18 @@ const Waves = ({
   useEffect(() => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
+    if (!canvas || !container) {
+      return undefined;
+    }
+
     ctxRef.current = canvas.getContext('2d');
 
-    function setSize() {
+    function updateBounds() {
       boundingRef.current = container.getBoundingClientRect();
+    }
+
+    function setSize() {
+      updateBounds();
       canvas.width = boundingRef.current.width;
       canvas.height = boundingRef.current.height;
     }
@@ -276,6 +285,9 @@ const Waves = ({
       setSize();
       setLines();
     }
+    function onScroll() {
+      updateBounds();
+    }
     function onMouseMove(e) {
       updateMouse(e.clientX, e.clientY);
     }
@@ -300,13 +312,20 @@ const Waves = ({
     setSize();
     setLines();
     frameIdRef.current = requestAnimationFrame(tick);
+    resizeObserverRef.current = new ResizeObserver(onResize);
+    resizeObserverRef.current.observe(container);
     window.addEventListener('resize', onResize);
+    window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('pointermove', onMouseMove, { passive: true });
     window.addEventListener('touchmove', onTouchMove, { passive: false });
 
     return () => {
+      resizeObserverRef.current?.disconnect();
       window.removeEventListener('resize', onResize);
+      window.removeEventListener('scroll', onScroll);
       window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('pointermove', onMouseMove);
       window.removeEventListener('touchmove', onTouchMove);
       cancelAnimationFrame(frameIdRef.current);
     };
