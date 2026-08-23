@@ -51,5 +51,3 @@ export const Button = React.forwardRef(function Button(
     </button>
   );
 });
-
-export { buttonVariants };

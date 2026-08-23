@@ -1,15 +1,13 @@
-import { Routes, Route } from 'react-router-dom';
-
-import { LandingPage } from '@/app/routes/landing-page';
-import { DashboardPage } from '@/app/routes/dashboard-page';
+import { useEffect } from 'react';
+import { AppRoutes } from './app/routes/AppRoutes';
+import { applyTheme, getStoredTheme } from './lib/theme';
 
 function App() {
-  return (
-    <Routes>
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/dashboard" element={<DashboardPage />} />
-    </Routes>
-  );
+  useEffect(() => {
+    applyTheme(getStoredTheme());
+  }, []);
+
+  return <AppRoutes />;
 }
 
 export default App;

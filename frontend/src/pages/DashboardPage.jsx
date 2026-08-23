@@ -26,12 +26,18 @@ export function DashboardPage() {
                 <div className="surface-card rounded-[var(--radius-2xl)] p-6">
                   <h2 className="text-lg font-semibold text-foreground">Roadmap snapshot</h2>
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    Your strongest next opportunity is system design preparation paired with structured interview practice.
+                    Your strongest next opportunity is system design preparation paired with
+                    structured interview practice.
                   </p>
                   <div className="mt-6 space-y-3">
                     {['React depth', 'System design', 'Mock interviews'].map((item, index) => (
-                      <div key={item} className="flex items-center gap-3 rounded-2xl border border-border/70 bg-secondary/45 px-4 py-3">
-                        <div className={`size-2.5 rounded-full ${index === 0 ? 'bg-primary' : 'bg-border'}`} />
+                      <div
+                        key={item}
+                        className="flex items-center gap-3 rounded-2xl border border-border/70 bg-secondary/45 px-4 py-3"
+                      >
+                        <div
+                          className={`size-2.5 rounded-full ${index === 0 ? 'bg-primary' : 'bg-border'}`}
+                        />
                         <span className="text-sm text-foreground">{item}</span>
                       </div>
                     ))}

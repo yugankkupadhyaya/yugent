@@ -16,7 +16,17 @@ const PORT = process.env.PORT || 6001;
 
 app.use('/', authRouter);
 
-app.listen(PORT, () => {
-  console.log(`Auth Service Started on ${PORT}`);
-  connectDb();
-});
+const start = async () => {
+  try {
+    await connectDb();
+  } catch {
+    console.error('Auth Service shutting down: database connection failed.');
+    process.exit(1);
+  }
+
+  app.listen(PORT, () => {
+    console.log(`Auth Service Started on ${PORT}`);
+  });
+};
+
+start();

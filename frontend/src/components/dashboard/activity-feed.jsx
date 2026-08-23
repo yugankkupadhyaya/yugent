@@ -1,28 +1,25 @@
-import { DashboardCard } from '@/components/dashboard/dashboard-card';
-
-const items = [
-  'Completed AI interview practice session',
-  'Resume score improved by 6 points',
-  'System design added to your roadmap',
+const activities = [
+  { title: 'Completed React deep dive', time: '2h ago', dot: 'bg-primary' },
+  { title: 'Resume feedback received', time: '5h ago', dot: 'bg-emerald-500' },
+  { title: 'Mock interview scheduled', time: '1d ago', dot: 'bg-amber-500' },
+  { title: 'System design module unlocked', time: '2d ago', dot: 'bg-sky-500' },
 ];
 
 export function ActivityFeed() {
   return (
-    <DashboardCard>
-      <div className="p-6">
-        <h3 className="text-lg font-semibold text-foreground">Recent activity</h3>
-        <div className="mt-5 space-y-4">
-          {items.map((item, index) => (
-            <div key={item} className="flex gap-3">
-              <div className="mt-1 size-2 rounded-full bg-primary" />
-              <div>
-                <p className="text-sm text-foreground">{item}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{index + 1}h ago</p>
-              </div>
+    <div className="surface-card rounded-[var(--radius-2xl)] p-6">
+      <h2 className="text-lg font-semibold text-foreground">Recent activity</h2>
+      <ul className="mt-4 space-y-4">
+        {activities.map((activity) => (
+          <li key={activity.title} className="flex items-start gap-3">
+            <span className={`mt-1.5 size-2.5 shrink-0 rounded-full ${activity.dot}`} />
+            <div className="flex flex-1 items-center justify-between gap-3">
+              <span className="text-sm text-foreground">{activity.title}</span>
+              <span className="shrink-0 text-xs text-muted-foreground">{activity.time}</span>
             </div>
-          ))}
-        </div>
-      </div>
-    </DashboardCard>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

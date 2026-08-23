@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Moon, Sun } from 'lucide-react';
 
@@ -17,7 +17,6 @@ const navLinks = [
 ];
 
 export function Navbar() {
-  const location = useLocation();
   const [theme, setTheme] = useState(getStoredTheme);
   const [scrolled, setScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState('');
@@ -30,18 +29,19 @@ export function Navbar() {
   }, [theme]);
 
   useEffect(() => {
-    setMobileOpen(false);
-  }, [location.pathname]);
-
-  useEffect(() => {
     function handleScroll() {
       setScrolled(window.scrollY > 8);
     }
 
     handleScroll();
-    window.addEventListener('scroll', handleScroll, { passive: true });
 
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, {
+      passive: true,
+    });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, []);
 
   useEffect(() => {
@@ -85,6 +85,7 @@ export function Navbar() {
       }`}
     >
       <div className="grid h-[68px] w-full grid-cols-[1fr_auto_1fr] items-center px-6 sm:px-8 lg:px-12 xl:px-16">
+        {/* Logo */}
         <a
           href="#hero"
           className="flex shrink-0 items-center justify-self-start text-lg font-semibold tracking-tight text-foreground"
@@ -92,6 +93,7 @@ export function Navbar() {
           <Logo className="h-9 w-auto" />
         </a>
 
+        {/* Navigation */}
         <nav className="hidden items-center gap-9 md:flex md:justify-self-center">
           {navLinks.map((link) => {
             const isActive = activeSection === link.sectionId;
@@ -105,24 +107,27 @@ export function Navbar() {
                 }`}
               >
                 {link.label}
-                {isActive ? (
+
+                {isActive && (
                   <motion.span
                     layoutId="navbar-active-indicator"
                     className="absolute inset-x-0 -bottom-0.5 h-px bg-primary"
                     transition={springs.soft}
                   />
-                ) : null}
+                )}
               </a>
             );
           })}
         </nav>
 
+        {/* Right side */}
         <div className="flex items-center gap-2 sm:gap-3 md:justify-self-end">
+          {/* Theme */}
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            className="size-9 rounded-full border border-border/70 bg-background/60"
+            className="size-9 rounded-full border border-border/70 bg-background/60 transition-colors hover:border-primary/30 hover:bg-primary/5"
             onClick={toggleTheme}
             aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
           >
@@ -137,19 +142,26 @@ export function Navbar() {
             </motion.span>
           </Button>
 
+          {/* Divider */}
           <span className="hidden h-5 w-px bg-border/60 md:block" aria-hidden="true" />
 
+          {/* Login */}
           <motion.div
             className="hidden md:block"
-            whileHover={{ scale: 1.03 }}
+            whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.97 }}
             transition={springs.snappy}
           >
-            <Button asChild size="sm" className="h-9 rounded-full px-4">
-              <Link to="/dashboard">Login</Link>
+            <Button
+              asChild
+              size="sm"
+              className="h-9 rounded-[10px] border border-primary/20 bg-primary px-4 font-medium text-primary-foreground shadow-[0_4px_14px_hsl(var(--primary)/0.18)] transition-all duration-200 hover:-translate-y-px hover:bg-primary/90 hover:shadow-[0_6px_18px_hsl(var(--primary)/0.25)] active:translate-y-0"
+            >
+              <Link to="/login">Login</Link>
             </Button>
           </motion.div>
 
+          {/* Mobile */}
           <MobileNav
             open={mobileOpen}
             onToggle={() => setMobileOpen((open) => !open)}

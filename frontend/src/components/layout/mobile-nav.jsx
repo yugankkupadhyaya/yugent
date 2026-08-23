@@ -47,7 +47,7 @@ export function MobileNav({ open, onToggle, onClose, links, activeSection }) {
 
             <div className="mt-2 border-t border-border/80 pt-3">
               <Button asChild className="h-10 w-full rounded-full" onClick={onClose}>
-                <Link to="/dashboard">Login</Link>
+                <Link to="/login">Login</Link>
               </Button>
             </div>
           </motion.div>

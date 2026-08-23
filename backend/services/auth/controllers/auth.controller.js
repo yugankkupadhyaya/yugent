@@ -53,6 +53,27 @@ export const login = async (req, res) => {
     return res.json({ success: true, user });
   } catch (error) {
     console.log(error);
+
+    const isAuthError =
+      error?.code?.startsWith('auth/') ||
+      error?.name === 'FirebaseAuthError' ||
+      error?.name === 'TokenVerificationError';
+
+    const isDbError =
+      error?.name?.includes('Mongoose') ||
+      (typeof error?.message === 'string' &&
+        error.message.includes('buffering timed out'));
+
+    if (isDbError) {
+      return res.status(500).json({
+        message: 'Database unavailable. Please try again later.',
+      });
+    }
+
+    if (isAuthError) {
+      return res.status(401).json({ message: 'Invalid or expired authentication token.' });
+    }
+
     return res.status(401).json({ message: error.message });
   }
 };

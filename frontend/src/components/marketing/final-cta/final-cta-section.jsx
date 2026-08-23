@@ -29,7 +29,7 @@ export function FinalCtaSection() {
 
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <PremiumButton asChild magnetic className="bg-primary-foreground text-primary hover:bg-primary-foreground/92">
-            <Link to="/dashboard">Login</Link>
+            <Link to="/login">Login</Link>
           </PremiumButton>
 
           <Button

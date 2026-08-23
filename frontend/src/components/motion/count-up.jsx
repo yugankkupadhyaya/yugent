@@ -11,6 +11,8 @@ export function CountUp({ to, duration = 1000, suffix = '', className }) {
   useEffect(() => {
     if (!isInView || prefersReducedMotion) {
       if (prefersReducedMotion) {
+        // The reduced-motion path synchronizes the displayed value immediately.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setValue(to);
       }
 
