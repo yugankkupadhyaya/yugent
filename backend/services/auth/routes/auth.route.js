@@ -10,7 +10,7 @@ authRouter.post("/login",login);
 
 authRouter.get('/me', me);
 
-authRouter.get("/logout",logout)
+authRouter.post("/logout",logout)
 
 authRouter.post("/add-coins",addCoins)
 

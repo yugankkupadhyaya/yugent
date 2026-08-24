@@ -7,7 +7,7 @@ export function Topbar() {
 
   const handleSignOut = async () => {
     try {
-      await api.get('/api/auth/logout');
+      await api.post('/api/auth/logout');
     } finally {
       await signOut({ redirectUrl: '/login' });
     }

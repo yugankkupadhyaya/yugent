@@ -6,4 +6,4 @@ redis.on("connect" , ()=>{
     console.log("redis connected")
 })
 
-export default redis
+export default redis 

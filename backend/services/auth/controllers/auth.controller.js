@@ -7,6 +7,7 @@ const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
 
 const sessionPayload = (user) => ({
   userId: user._id,
+  clerkUserId: user.clerkUserId,
   name: user.name,
   email: user.email,
   interviewCoin: user.interviewCoin,
@@ -82,6 +83,8 @@ export const me = async (req, res) => {
   try {
     const clerkUserId = req.headers['x-clerk-user-id'];
     if (!clerkUserId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+    const sessionData = await getSessionUser(req);
+    if (!sessionData) return res.status(401).json({ success: false, message: 'Application session expired.' });
     const user = await User.findOne({ clerkUserId });
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
     return res.json({ success: true, user });
@@ -105,7 +108,12 @@ const getSessionUser = async (req) => {
   if (!sessionId) return null;
   const session = await redis.get(`session:${sessionId}`);
   if (!session) return null;
-  return JSON.parse(session);
+  const sessionData = JSON.parse(session);
+  // Bind the application session to the Clerk identity authenticated by the gateway.
+  if (!req.headers['x-clerk-user-id'] || sessionData.clerkUserId !== req.headers['x-clerk-user-id']) {
+    return null;
+  }
+  return sessionData;
 };
 
 export const useInterviewCoins = async (req, res) => {

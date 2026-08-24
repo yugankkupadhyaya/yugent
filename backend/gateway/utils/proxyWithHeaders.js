@@ -1,6 +1,6 @@
 import proxy from 'express-http-proxy';
 
-export const proxyWithHeaders = (target, pathResolver) =>
+export const proxyWithHeaders = (target, pathResolver, { includeGatewayAuth = false } = {}) =>
   proxy(target, {
     proxyReqPathResolver: pathResolver,
     proxyReqOptDecorator(opts, req) {
@@ -12,7 +12,11 @@ export const proxyWithHeaders = (target, pathResolver) =>
       opts.headers['x-clerk-user-id'] = req.userId;
       opts.headers['x-clerk-email'] = req.clerkIdentity?.email || '';
       opts.headers['x-clerk-name'] = req.clerkIdentity?.name || '';
-      opts.headers['x-gateway-auth'] = process.env.AUTH_SERVICE_SECRET || '';
+      if (includeGatewayAuth) {
+        opts.headers['x-gateway-auth'] = process.env.AUTH_SERVICE_SECRET || '';
+      } else {
+        delete opts.headers['x-gateway-auth'];
+      }
 
       return opts;
     },

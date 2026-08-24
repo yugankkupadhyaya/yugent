@@ -42,9 +42,10 @@ const addClerkIdentity = async (req, res, next) => {
     const clerkUser = await clerkClient.users.getUser(req.userId);
     req.clerkIdentity = {
       email:
-        clerkUser.emailAddresses?.find(
-          (address) => address.id === clerkUser.primaryEmailAddressId
-        )?.emailAddress || clerkUser.emailAddresses?.[0]?.emailAddress || '',
+        clerkUser.emailAddresses?.find((address) => address.id === clerkUser.primaryEmailAddressId)
+          ?.emailAddress ||
+        clerkUser.emailAddresses?.[0]?.emailAddress ||
+        '',
       name: [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' '),
     };
     next();
@@ -54,7 +55,12 @@ const addClerkIdentity = async (req, res, next) => {
   }
 };
 
-app.use('/api/auth', isAuth, addClerkIdentity, proxyWithHeaders(process.env.AUTH_SERVICE_URL));
+app.use(
+  '/api/auth',
+  isAuth,
+  addClerkIdentity,
+  proxyWithHeaders(process.env.AUTH_SERVICE_URL, undefined, { includeGatewayAuth: true })
+);
 // Protected routes
 app.use('/api/resume', isAuth, proxyWithHeaders(process.env.RESUME_SERVICE_URL));
 
@@ -63,12 +69,13 @@ app.use('/api/interview', isAuth, proxyWithHeaders(process.env.INTERVIEW_SERVICE
 app.use('/api/roadmap', isAuth, proxyWithHeaders(process.env.ROADMAP_SERVICE_URL));
 
 app.use('/api/billing', isAuth, proxyWithHeaders(process.env.BILLING_SERVICE_URL));
+app.get('/api/me', isAuth, getCurrentUser);
 
 app.get(
   '/api/me',
   isAuth,
   addClerkIdentity,
-  proxyWithHeaders(process.env.AUTH_SERVICE_URL, () => '/me')
+  proxyWithHeaders(process.env.AUTH_SERVICE_URL, () => '/me', { includeGatewayAuth: true })
 );
 
 app.listen(PORT, () => {
