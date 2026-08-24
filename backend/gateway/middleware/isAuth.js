@@ -1,5 +1,5 @@
 import { getAuth } from '@clerk/express';
-import redis from '../../shared/redis/redis.js';
+import redis from '../shared/redis/redis.js';
 
 export const isAuth = async (req, res, next) => {
   try {
