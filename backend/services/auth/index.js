@@ -1,16 +1,28 @@
 import express from 'express';
-import dotenv from 'dotenv';
+import 'dotenv/config';
 import cookieParser from 'cookie-parser';
 import { connectDb } from './configs/db.js';
-import dns from 'dns';
 import authRouter from './routes/auth.route.js';
-dotenv.config();
 
 const app = express();
 
 app.use(express.json());
 
 app.use(cookieParser());
+
+app.get('/health', (req, res) => {
+  res.sendStatus(200);
+});
+
+app.use((req, res, next) => {
+  if (
+    !process.env.AUTH_SERVICE_SECRET ||
+    req.headers['x-gateway-auth'] !== process.env.AUTH_SERVICE_SECRET
+  ) {
+    return res.status(401).json({ success: false, message: 'Unauthorized' });
+  }
+  next();
+});
 
 const PORT = process.env.PORT || 6001;
 

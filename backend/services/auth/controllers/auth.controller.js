@@ -1,239 +1,150 @@
 import crypto from 'crypto';
 
-import { getAuth } from 'firebase-admin/auth';
-
-import { app } from '../configs/firebase.js';
 import User from '../model/user.model.js';
 import redis from '../../../shared/redis/redis.js';
 
+const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
+
+const sessionPayload = (user) => ({
+  userId: user._id,
+  name: user.name,
+  email: user.email,
+  interviewCoin: user.interviewCoin,
+});
+
+const writeSession = async (sessionId, user) => {
+  await redis.set(`session:${sessionId}`, JSON.stringify(sessionPayload(user)), 'EX', SESSION_TTL_SECONDS);
+};
+
+const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+  maxAge: SESSION_TTL_SECONDS * 1000,
+};
+
+const sendServerError = (res, error) => {
+  console.error('Auth service error:', error?.message || error);
+  const isDatabaseError = error?.name?.includes('Mongoose') || error?.name === 'MongoServerError';
+  return res.status(500).json({
+    success: false,
+    message: isDatabaseError ? 'Database unavailable. Please try again later.' : 'Server error. Please try again later.',
+  });
+};
+
 export const login = async (req, res) => {
   try {
-    const { token } = req.body;
+    const clerkUserId = req.headers['x-clerk-user-id'];
+    const email = req.headers['x-clerk-email'];
+    const name = req.headers['x-clerk-name'];
 
-    const decoded = await getAuth(app).verifyIdToken(token);
+    if (!clerkUserId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+    if (!email || !name) {
+      return res.status(400).json({ success: false, message: 'User profile information is missing.' });
+    }
 
-    let user = await User.findOne({
-      firebaseUid: decoded.uid,
-    });
-
+    let user = await User.findOne({ clerkUserId });
     if (!user) {
-      user = await User.create({
-        firebaseUid: decoded.uid,
+      try {
+        user = await User.create({ clerkUserId, email, name });
+      } catch (error) {
+        // A concurrent first login may win the unique clerkUserId index.
+        if (error?.code !== 11000) throw error;
+        user = await User.findOne({ clerkUserId });
+        if (!user) throw error;
+      }
+    } else if (user.email !== email || user.name !== name) {
+      // Keep the Clerk profile current without touching interviewCoin.
+      user.email = email;
+      user.name = name;
+      await user.save();
+    }
 
-        email: decoded.email,
-
-        name: decoded.name,
-      });
+    const existingSessionId = req.cookies?.session;
+    if (existingSessionId) {
+      const existingSession = await redis.get(`session:${existingSessionId}`);
+      if (existingSession && String(JSON.parse(existingSession).userId) === String(user._id)) {
+        await writeSession(existingSessionId, user);
+        return res.json({ success: true, user });
+      }
     }
 
     const sessionId = crypto.randomUUID();
-
-    await redis.set(
-      `session:${sessionId}`,
-      JSON.stringify({
-        userId: user._id,
-
-        name: user.name,
-
-        email: user.email,
-
-        interviewCoin: user.interviewCoin,
-      }),
-      'EX',
-      60 * 60 * 24 * 7
-    );
-
-    res.cookie('session', sessionId, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      maxAge: 1000 * 60 * 60 * 24 * 7,
-    });
-
+    await writeSession(sessionId, user);
+    res.cookie('session', sessionId, cookieOptions);
     return res.json({ success: true, user });
   } catch (error) {
-    console.log(error);
+    return sendServerError(res, error);
+  }
+};
 
-    const isAuthError =
-      error?.code?.startsWith('auth/') ||
-      error?.name === 'FirebaseAuthError' ||
-      error?.name === 'TokenVerificationError';
-
-    const isDbError =
-      error?.name?.includes('Mongoose') ||
-      (typeof error?.message === 'string' &&
-        error.message.includes('buffering timed out'));
-
-    if (isDbError) {
-      return res.status(500).json({
-        message: 'Database unavailable. Please try again later.',
-      });
-    }
-
-    if (isAuthError) {
-      return res.status(401).json({ message: 'Invalid or expired authentication token.' });
-    }
-
-    return res.status(401).json({ message: error.message });
+export const me = async (req, res) => {
+  try {
+    const clerkUserId = req.headers['x-clerk-user-id'];
+    if (!clerkUserId) return res.status(401).json({ success: false, message: 'Unauthorized' });
+    const user = await User.findOne({ clerkUserId });
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    return res.json({ success: true, user });
+  } catch (error) {
+    return sendServerError(res, error);
   }
 };
 
 export const logout = async (req, res) => {
   try {
-    const sessionId = req.cookies?.session;
-
-    if (sessionId) {
-      await redis.del(`session:${sessionId}`);
-    }
-
-    res.clearCookie('session', {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-    });
-
-    return res.json({
-      success: true,
-      message: 'Logged out successfully',
-    });
+    if (req.cookies?.session) await redis.del(`session:${req.cookies.session}`);
+    res.clearCookie('session', cookieOptions);
+    return res.json({ success: true, message: 'Logged out successfully' });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return sendServerError(res, error);
   }
 };
+
+const getSessionUser = async (req) => {
+  const sessionId = req.cookies?.session;
+  if (!sessionId) return null;
+  const session = await redis.get(`session:${sessionId}`);
+  if (!session) return null;
+  return JSON.parse(session);
+};
+
 export const useInterviewCoins = async (req, res) => {
   try {
-    const sessionId = req.cookies?.session;
-
-    const session = await redis.get(`session:${sessionId}`);
-
-    const sessionData = JSON.parse(session);
-
+    const sessionData = await getSessionUser(req);
+    if (!sessionData) return res.status(401).json({ success: false, message: 'Application session expired.' });
     const { coins, action } = req.body;
-
-    if (!coins) {
-      return res.status(400).json({
-        success: false,
-        message: 'Coins are required',
-      });
+    if (!Number.isFinite(Number(coins)) || Number(coins) <= 0) {
+      return res.status(400).json({ success: false, message: 'Valid coins are required' });
     }
-
     const user = await User.findById(sessionData.userId);
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found',
-      });
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    if (user.interviewCoin < Number(coins)) {
+      return res.status(403).json({ success: false, message: 'Not enough interview coins', interviewCoin: user.interviewCoin });
     }
-
-    // Not enough coins
-    if (user.interviewCoin < coins) {
-      return res.status(403).json({
-        success: false,
-        message: 'Not enough interview coins',
-        interviewCoin: user.interviewCoin,
-      });
-    }
-
-    // Deduct coins
-    user.interviewCoin -= coins;
-
+    user.interviewCoin -= Number(coins);
     await user.save();
-    await redis.set(
-      `session:${sessionId}`,
-      JSON.stringify({
-        userId: user._id,
-
-        name: user.name,
-
-        email: user.email,
-
-        interviewCoin: user.interviewCoin,
-      }),
-      'EX',
-      60 * 60 * 24 * 7
-    );
-
-    return res.status(200).json({
-      success: true,
-      message: 'Interview coins updated successfully',
-      action,
-      interviewCoin: user.interviewCoin,
-    });
+    await writeSession(req.cookies.session, user);
+    return res.json({ success: true, message: 'Interview coins updated successfully', action, interviewCoin: user.interviewCoin });
   } catch (error) {
-    console.log(error);
-
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return sendServerError(res, error);
   }
 };
 
 export const addCoins = async (req, res) => {
   try {
-    const sessionId = req.cookies?.session;
-
-    const session = await redis.get(`session:${sessionId}`);
-
-    if (!session) {
-      return res.status(401).json({
-        success: false,
-        message: 'Session expired',
-      });
-    }
-
-    const sessionData = JSON.parse(session);
-
+    const sessionData = await getSessionUser(req);
+    if (!sessionData) return res.status(401).json({ success: false, message: 'Application session expired.' });
     const { coins } = req.body;
-
-    if (!coins || coins <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Valid coins are required',
-      });
+    if (!Number.isFinite(Number(coins)) || Number(coins) <= 0) {
+      return res.status(400).json({ success: false, message: 'Valid coins are required' });
     }
-
     const user = await User.findById(sessionData.userId);
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found',
-      });
-    }
-
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
     user.interviewCoin += Number(coins);
-
     await user.save();
-
-    // Update Redis Session
-    await redis.set(
-      `session:${sessionId}`,
-      JSON.stringify({
-        userId: user._id,
-        name: user.name,
-        email: user.email,
-        interviewCoin: user.interviewCoin,
-      }),
-      'EX',
-      60 * 60 * 24 * 7
-    );
-
-    return res.status(200).json({
-      success: true,
-      message: 'Coins added successfully',
-      interviewCoin: user.interviewCoin,
-    });
+    await writeSession(req.cookies.session, user);
+    return res.json({ success: true, message: 'Coins added successfully', interviewCoin: user.interviewCoin });
   } catch (error) {
-    console.log(error);
-
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return sendServerError(res, error);
   }
 };

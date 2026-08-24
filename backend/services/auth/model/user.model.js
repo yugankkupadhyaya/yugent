@@ -2,13 +2,16 @@ import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema(
   {
-    firebaseUid: {
+    clerkUserId: {
       type: String,
       required: true,
       unique: true,
     },
 
-    name: { type: String, required: true },
+    name: {
+      type: String,
+      required: true,
+    },
 
     email: {
       type: String,

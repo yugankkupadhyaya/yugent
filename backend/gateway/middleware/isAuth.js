@@ -1,23 +1,25 @@
-import redis from '../../shared/redis/redis.js';
+import { getAuth } from '@clerk/express';
 
-export const isAuth = async (req, res, next) => {
+export const isAuth = (req, res, next) => {
   try {
-    const sessionId = req.cookies?.session;
+    const { isAuthenticated, userId } = getAuth(req);
 
-    if (!sessionId) {
-      return res.status(401).json({ message: 'Unauthorized' });
+    if (!isAuthenticated || !userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized',
+      });
     }
 
-    const session = await redis.get(`session:${sessionId}`);
-
-    if (!session) {
-      return res.status(401).json({ message: 'Session expired' });
-    }
-
-    req.user = JSON.parse(session);
+    req.userId = userId;
 
     next();
   } catch (error) {
-    return res.status(401).json({ message: 'Unauthorized' });
+    console.error('Clerk auth error:', error);
+
+    return res.status(401).json({
+      success: false,
+      message: 'Unauthorized',
+    });
   }
 };

@@ -1,5 +1,5 @@
 import express from "express";
-import {addCoins, login, logout, useInterviewCoins } from "../controllers/auth.controller.js";
+import { addCoins, login, logout, me, useInterviewCoins } from '../controllers/auth.controller.js';
 
 
 
@@ -7,6 +7,8 @@ import {addCoins, login, logout, useInterviewCoins } from "../controllers/auth.c
 const authRouter = express.Router();
 
 authRouter.post("/login",login);
+
+authRouter.get('/me', me);
 
 authRouter.get("/logout",logout)
 

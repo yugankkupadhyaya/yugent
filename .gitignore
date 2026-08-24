@@ -1,0 +1,53 @@
+.env
+.env.*
+!.env.example
+
+*.log
+node_modules/
+dist/
+
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# Build output
+dist/
+**/dist/
+build/
+**/build/
+
+# Vite / caches
+.vite/
+.cache/
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local Docker / database data
+docker-data/
+mongodb-data/
+redis-data/
+
+# Temporary files
+*.tmp
+*.temp

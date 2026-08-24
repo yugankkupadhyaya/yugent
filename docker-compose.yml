@@ -1,0 +1,134 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: yugent-mongo
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - yugent
+    healthcheck:
+      test: ['CMD-SHELL', "mongosh --quiet --eval 'db.adminCommand({ ping: 1 }).ok' | grep 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: yugent-redis
+    ports:
+      - '6379:6379'
+    networks:
+      - yugent
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  auth:
+    build:
+      context: ./backend
+      dockerfile: services/auth/Dockerfile
+    container_name: yugent-auth
+    env_file:
+      - ./backend/services/auth/.env
+    environment:
+      PORT: '8001'
+      MONGODB_URL: mongodb://mongo:27017/User
+      REDIS_URL: redis://redis:6379
+    ports:
+      - '8001:8001'
+    networks:
+      - yugent
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:8001/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+  gateway:
+    build:
+      context: ./backend/gateway
+    container_name: yugent-gateway
+    env_file:
+      - ./backend/gateway/.env
+    environment:
+      PORT: '8000'
+      AUTH_SERVICE_URL: http://auth:8001
+      FRONTEND_URL: http://localhost:5173
+      REDIS_URL: redis://redis:6379
+    ports:
+      - '8000:8000'
+    networks:
+      - yugent
+    depends_on:
+      auth:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:8000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: yugent-frontend
+    env_file:
+      - ./frontend/.env
+    environment:
+      VITE_BACKEND_URL: http://localhost:8000
+    ports:
+      - '5173:5173'
+    networks:
+      - yugent
+    depends_on:
+      gateway:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:5173/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+networks:
+  yugent:
+    name: yugent-network
+
+volumes:
+  mongo-data:
+    name: yugent-mongo-data

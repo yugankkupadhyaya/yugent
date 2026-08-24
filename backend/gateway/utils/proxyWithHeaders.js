@@ -1,17 +1,18 @@
 import proxy from 'express-http-proxy';
 
-export const proxyWithHeaders = (target) =>
+export const proxyWithHeaders = (target, pathResolver) =>
   proxy(target, {
+    proxyReqPathResolver: pathResolver,
     proxyReqOptDecorator(opts, req) {
       opts.headers = opts.headers || {};
 
-      if (req.headers.cookie) {
-        opts.headers.cookie = req.headers.cookie;
-      }
-
-      if (req.headers.authorization) {
-        opts.headers.authorization = req.headers.authorization;
-      }
+      delete opts.headers['x-clerk-user-id'];
+      delete opts.headers['x-clerk-email'];
+      delete opts.headers['x-clerk-name'];
+      opts.headers['x-clerk-user-id'] = req.userId;
+      opts.headers['x-clerk-email'] = req.clerkIdentity?.email || '';
+      opts.headers['x-clerk-name'] = req.clerkIdentity?.name || '';
+      opts.headers['x-gateway-auth'] = process.env.AUTH_SERVICE_SECRET || '';
 
       return opts;
     },
