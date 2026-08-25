@@ -1,5 +1,5 @@
 @theme inline {
-  --font-sans: 'Inter Variable', 'Geist Variable', system-ui, -apple-system, BlinkMacSystemFont,
+  --font-sans: 'Geist Variable', system-ui, -apple-system, BlinkMacSystemFont,
     'Segoe UI', sans-serif;
 
   --color-background: hsl(var(--background));
@@ -25,6 +25,14 @@
   --color-accent-cyan: hsl(var(--accent-cyan));
   --color-accent-violet: hsl(var(--accent-violet));
   --color-accent-coral: hsl(var(--accent-coral));
+  --color-sidebar: hsl(var(--sidebar));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
   --radius-sm: 0.625rem;
   --radius-md: 0.875rem;
   --radius-lg: 1.125rem;
@@ -70,6 +78,14 @@
   --accent-cyan: 188 82% 48%;
   --accent-violet: 270 72% 55%;
   --accent-coral: 340 82% 58%;
+  --sidebar: 220 33% 98%;
+  --sidebar-foreground: 222 28% 13%;
+  --sidebar-primary: 222 82% 56%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 220 34% 95%;
+  --sidebar-accent-foreground: 222 28% 13%;
+  --sidebar-border: 220 20% 88%;
+  --sidebar-ring: 222 82% 56%;
 }
 
 .dark {
@@ -97,4 +113,12 @@
   --accent-cyan: 188 82% 55%;
   --accent-violet: 270 75% 68%;
   --accent-coral: 340 82% 65%;
+  --sidebar: 222 24% 8%;
+  --sidebar-foreground: 220 25% 96%;
+  --sidebar-primary: 218 88% 65%;
+  --sidebar-primary-foreground: 222 24% 8%;
+  --sidebar-accent: 222 22% 14%;
+  --sidebar-accent-foreground: 220 25% 96%;
+  --sidebar-border: 222 16% 22%;
+  --sidebar-ring: 218 88% 65%;
 }

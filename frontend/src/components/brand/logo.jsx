@@ -1,3 +1,5 @@
+
+
 export function Logo({ className, ...props }) {
   return (
     <svg
@@ -36,3 +38,5 @@ export function Logo({ className, ...props }) {
     </svg>
   );
 }
+
+export default Logo;

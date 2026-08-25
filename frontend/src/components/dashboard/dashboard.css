@@ -1,0 +1,20 @@
+.dashboard-shell {
+  isolation: isolate;
+}
+
+.dashboard-shell::before {
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+  content: '';
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg width='720' height='520' viewBox='0 0 720 520' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cg stroke='%233B82F6' stroke-width='1'%3E%3Cpath d='M-42 119C67 63 142 169 256 113S447 65 565 111s203 21 234-43'/%3E%3Cpath d='M-65 153c111-57 192 51 308-5S443 99 559 145s202 20 236-45'/%3E%3Cpath d='M-83 189c114-59 199 49 317-7s203-49 321-3 201 17 238-51'/%3E%3Cpath d='M-35 322c98-50 184 47 287-3s199-61 313-9 203 25 247-34'/%3E%3Cpath d='M-55 356c104-51 191 49 296-1s199-60 316-8 207 22 254-40'/%3E%3Cpath d='M-72 392c108-52 199 48 305-3s202-58 322-6 207 20 258-42'/%3E%3C/g%3E%3C/svg%3E");
+  background-position: center top;
+  background-repeat: repeat;
+  background-size: 720px 520px;
+}
+
+.dark .dashboard-shell::before {
+  opacity: 0.07;
+}

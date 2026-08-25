@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { useClerk } from '@clerk/react';
+import { useClerk, useUser } from '@clerk/react';
 
 import {
   Coins,
@@ -12,6 +12,7 @@ import {
   MoreHorizontal,
   Plus,
   Settings,
+  UserRound,
 } from 'lucide-react';
 
 import {
@@ -66,81 +67,158 @@ const navigation = [
   },
 ];
 
+function isCurrentPath(pathname, itemPath) {
+  if (itemPath === '/dashboard') {
+    return pathname === itemPath;
+  }
+
+  return pathname === itemPath || pathname.startsWith(`${itemPath}/`);
+}
+
 export function DashboardSidebar({ user }) {
   const location = useLocation();
   const { signOut } = useClerk();
+  const { user: clerkUser } = useUser();
+
+  /*
+   * Clerk owns the user's identity.
+   * Yugent user owns application-specific data such as interview coins.
+   */
+  const name = clerkUser?.fullName || clerkUser?.firstName || 'User';
+
+  const email = clerkUser?.primaryEmailAddress?.emailAddress || '';
+
+  const avatarLetter = name.charAt(0).toUpperCase() || 'U';
+
+  const coins = user?.interviewCoin ?? 0;
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border/60 bg-background">
-      {/* Brand */}
-      <SidebarHeader className="px-3 py-5">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              render={
-                <Link to="/" aria-label="Yugent home">
-                  <Logo className="h-8 w-auto" />
-                </Link>
-              }
-              tooltip="Yugent"
-              className="h-10 px-2"
-            />
-          </SidebarMenuItem>
-        </SidebarMenu>
+    <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-sidebar">
+      {/* =========================================================
+          BRAND
+      ========================================================= */}
+
+      <SidebarHeader className="px-5 py-5 group-data-[collapsible=icon]:px-2">
+        <Link
+          to="/"
+          aria-label="Yugent home"
+          className="
+      flex
+      h-10
+      w-fit
+      items-center
+      overflow-hidden
+      rounded-md
+      outline-none
+      focus-visible:ring-2
+      focus-visible:ring-ring/60
+      group-data-[collapsible=icon]:mx-auto
+    "
+        >
+          <Logo className="h-9 w-[128px] shrink-0" />
+        </Link>
       </SidebarHeader>
+      <SidebarSeparator className="bg-sidebar-border/80 group-data-[collapsible=icon]:mx-2" />
 
-      <SidebarSeparator />
+      {/* =========================================================
+          MAIN CONTENT
+      ========================================================= */}
 
-      <SidebarContent className="px-2 py-3">
-        {/* Create interview */}
-        <SidebarGroup className="px-0">
+      <SidebarContent className="px-3 py-5 group-data-[collapsible=icon]:px-2">
+        {/* ---------------------------------------------------------
+            CREATE INTERVIEW
+        --------------------------------------------------------- */}
+
+        <SidebarGroup className="p-0">
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton
                   render={
                     <Link to="/interview">
-                      <Plus className="size-4" />
+                      <Plus className="size-4 shrink-0" />
                       <span>Create interview</span>
                     </Link>
                   }
                   tooltip="Create interview"
                   size="lg"
-                  className="bg-primary text-primary-foreground shadow-[0_6px_18px_hsl(var(--primary)/0.16)] transition-all hover:bg-primary/90 hover:text-primary-foreground"
+                  className="
+                    h-11
+                    rounded-lg
+                    bg-primary
+                    px-3
+                    font-medium
+                    text-primary-foreground
+                    shadow-none
+                    transition-colors
+                    hover:bg-primary/90
+                    hover:text-primary-foreground
+                    focus-visible:ring-primary/60
+                    group-data-[collapsible=icon]:size-10!
+                  "
                 />
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Workspace */}
-        <SidebarGroup className="mt-4 px-0">
-          <SidebarGroupLabel className="px-2 text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground/70">
+        {/* ---------------------------------------------------------
+            WORKSPACE
+        --------------------------------------------------------- */}
+
+        <SidebarGroup className="mt-7 p-0">
+          <SidebarGroupLabel
+            className="
+              mb-2
+              h-auto
+              px-3
+              text-[10px]
+              font-semibold
+              uppercase
+              tracking-[0.16em]
+              text-muted-foreground/75
+              group-data-[collapsible=icon]:px-0
+            "
+          >
             Workspace
           </SidebarGroupLabel>
 
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-1">
               {navigation.map((item) => {
                 const Icon = item.icon;
 
-                const active =
-                  item.to === '/dashboard'
-                    ? location.pathname === '/dashboard'
-                    : location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
+                const active = isCurrentPath(location.pathname, item.to);
 
                 return (
                   <SidebarMenuItem key={item.to}>
                     <SidebarMenuButton
                       render={
                         <Link to={item.to}>
-                          <Icon className="size-4" />
+                          <Icon className="size-4 shrink-0" />
                           <span>{item.label}</span>
                         </Link>
                       }
                       isActive={active}
                       tooltip={item.label}
-                      className="h-9 text-sm text-muted-foreground transition-colors hover:text-foreground data-[active=true]:bg-primary/10 data-[active=true]:text-foreground data-[active=true]:shadow-none"
+                      className="
+                        h-9
+                        rounded-lg
+                        px-3
+                        text-sm
+                        font-medium
+                        text-muted-foreground
+                        transition-colors
+                        hover:bg-sidebar-accent
+                        hover:text-sidebar-foreground
+                        data-[active=true]:bg-primary/10
+                        data-[active=true]:font-medium
+                        data-[active=true]:text-sidebar-foreground
+                        data-[active=true]:shadow-none
+                        data-[active=true]:[&_svg]:text-primary
+                        group-data-[collapsible=icon]:size-9!
+                        group-data-[collapsible=icon]:p-2!
+                      "
                     />
                   </SidebarMenuItem>
                 );
@@ -150,23 +228,114 @@ export function DashboardSidebar({ user }) {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="px-2 pb-4">
-        {/* Interview coins */}
-        <div className="border border-border/60 bg-card/50 px-3 py-3">
-          <div className="flex items-center gap-2">
-            <Coins className="size-4 text-primary" />
+      {/* =========================================================
+          FOOTER
+      ========================================================= */}
 
-            <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-              Interview coins
-            </span>
-          </div>
+      <SidebarFooter className="px-3 pb-4 group-data-[collapsible=icon]:px-2">
+        {/* ---------------------------------------------------------
+            INTERVIEW COINS
+        --------------------------------------------------------- */}
 
-          <p className="mt-2 text-xl font-semibold tracking-tight">{user?.interviewCoin ?? 0}</p>
-        </div>
+        <SidebarGroup className="p-0">
+          <SidebarGroupContent>
+            <Link
+              to="/billing"
+              aria-label={`${coins} interview coins. Manage billing.`}
+              className="
+                group
+                flex
+                items-center
+                justify-between
+                gap-3
+                rounded-lg
+                border
+                border-sidebar-border
+                bg-sidebar
+                px-3
+                py-3
+                outline-none
+                transition-colors
+                hover:border-primary/30
+                hover:bg-sidebar-accent
+                focus-visible:ring-2
+                focus-visible:ring-ring/60
+                group-data-[collapsible=icon]:justify-center
+                group-data-[collapsible=icon]:p-2
+              "
+            >
+              <div className="flex min-w-0 items-center gap-2.5">
+                <span
+                  className="
+                    flex
+                    size-7
+                    shrink-0
+                    items-center
+                    justify-center
+                    rounded-md
+                    border
+                    border-primary/20
+                    bg-primary/10
+                    text-primary
+                  "
+                >
+                  <Coins className="size-3.5" />
+                </span>
 
-        <SidebarSeparator className="my-3" />
+                <span className="min-w-0 group-data-[collapsible=icon]:hidden">
+                  <span
+                    className="
+                      block
+                      truncate
+                      text-[9px]
+                      font-semibold
+                      uppercase
+                      tracking-[0.14em]
+                      text-muted-foreground
+                    "
+                  >
+                    Interview coins
+                  </span>
 
-        {/* User profile */}
+                  <span
+                    className="
+                      mt-0.5
+                      block
+                      text-base
+                      font-semibold
+                      tracking-[-0.03em]
+                      tabular-nums
+                      text-foreground
+                    "
+                  >
+                    {coins}
+                  </span>
+                </span>
+              </div>
+
+              <span
+                className="
+                  text-base
+                  font-medium
+                  leading-none
+                  text-muted-foreground
+                  transition-colors
+                  group-hover:text-primary
+                  group-data-[collapsible=icon]:hidden
+                "
+              >
+                +
+              </span>
+            </Link>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarSeparator className="my-4 bg-sidebar-border/80" />
+
+        {/* ---------------------------------------------------------
+            USER PROFILE
+        --------------------------------------------------------- */}
+
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
@@ -174,43 +343,118 @@ export function DashboardSidebar({ user }) {
                 render={
                   <SidebarMenuButton
                     size="lg"
-                    tooltip={user?.name || 'Account'}
-                    className="h-12 hover:bg-muted/50"
+                    tooltip={name}
+                    className="
+                      h-12
+                      rounded-lg
+                      px-2.5
+                      hover:bg-sidebar-accent
+                      group-data-[collapsible=icon]:size-10!
+                      group-data-[collapsible=icon]:p-1!
+                    "
                   />
                 }
               >
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border/70 bg-muted text-xs font-semibold text-foreground">
-                  {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-                </div>
+                {/* Avatar */}
 
-                <div className="min-w-0 flex-1 text-left">
-                  <p className="truncate text-sm font-medium text-foreground">
-                    {user?.name || 'User'}
-                  </p>
+                <span
+                  className="
+                    flex
+                    size-8
+                    shrink-0
+                    items-center
+                    justify-center
+                    rounded-full
+                    border
+                    border-border
+                    bg-muted
+                    text-xs
+                    font-semibold
+                    text-foreground
+                  "
+                >
+                  {avatarLetter}
+                </span>
 
-                  <p className="truncate text-[11px] text-muted-foreground">{user?.email || ''}</p>
-                </div>
+                {/* User information */}
+
+                <span className="min-w-0 flex-1 text-left">
+                  <span className="block truncate text-sm font-medium text-foreground">{name}</span>
+
+                  <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                    {email}
+                  </span>
+                </span>
 
                 <MoreHorizontal className="size-4 shrink-0 text-muted-foreground" />
               </DropdownMenuTrigger>
 
-              <DropdownMenuContent side="top" align="end" sideOffset={8} className="w-56">
-                <div className="px-2 py-2">
-                  <p className="truncate text-sm font-medium">{user?.name || 'User'}</p>
+              {/* -----------------------------------------------------
+                  PROFILE DROPDOWN
+              ----------------------------------------------------- */}
 
-                  <p className="truncate text-xs text-muted-foreground">{user?.email || ''}</p>
+              <DropdownMenuContent
+                side="top"
+                align="start"
+                sideOffset={8}
+                className="
+                  w-60
+                  rounded-lg
+                  border
+                  border-border
+                  bg-popover
+                  p-1.5
+                  shadow-[var(--shadow-md)]
+                "
+              >
+                {/* Profile header */}
+
+                <div className="px-2 py-2">
+                  <p className="truncate text-sm font-medium text-foreground">{name}</p>
+
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground">{email}</p>
                 </div>
 
                 <DropdownMenuSeparator />
 
-                <DropdownMenuItem render={<Link to="/settings" />}>
-                  <Settings className="size-4" />
-                  <span>Settings</span>
-                </DropdownMenuItem>
+                {/* Profile */}
+
+                <DropdownMenuItem
+                  render={
+                    <Link to="/profile">
+                      <UserRound className="size-4" />
+                      <span>Profile information</span>
+                    </Link>
+                  }
+                  className="min-h-9 px-2 text-sm"
+                />
+
+                {/* Settings */}
+
+                <DropdownMenuItem
+                  render={
+                    <Link to="/settings">
+                      <Settings className="size-4" />
+                      <span>Settings</span>
+                    </Link>
+                  }
+                  className="min-h-9 px-2 text-sm"
+                />
+
+                <DropdownMenuSeparator />
+
+                {/* Logout */}
 
                 <DropdownMenuItem
                   onClick={() => signOut()}
-                  className="text-destructive focus:text-destructive"
+                  className="
+                    min-h-9
+                    px-2
+                    text-sm
+                    text-destructive
+                    focus:bg-destructive/10
+                    focus:text-destructive
+                  "
                 >
                   <LogOut className="size-4" />
                   <span>Logout</span>
