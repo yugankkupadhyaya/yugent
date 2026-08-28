@@ -1,27 +1,17 @@
-import crypto from 'crypto';
-
 import User from '../model/user.model.js';
-import redis from '../../../shared/redis/redis.js';
 
-const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
+const DEFAULT_INTERVIEW_COINS = 150;
 
-const sessionPayload = (user) => ({
-  userId: user._id,
-  clerkUserId: user.clerkUserId,
-  name: user.name,
-  email: user.email,
-  interviewCoin: user.interviewCoin,
-});
-
-const writeSession = async (sessionId, user) => {
-  await redis.set(`session:${sessionId}`, JSON.stringify(sessionPayload(user)), 'EX', SESSION_TTL_SECONDS);
+const ACTION_COIN_COSTS = {
+  'resume-analysis': 25,
+  'resume-builder-download': 10,
+  'download-pdf': 10,
 };
 
 const cookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
   sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-  maxAge: SESSION_TTL_SECONDS * 1000,
 };
 
 const sendServerError = (res, error) => {
@@ -33,69 +23,84 @@ const sendServerError = (res, error) => {
   });
 };
 
+const getClerkProfile = (req) => {
+  const clerkUserId = req.headers['x-clerk-user-id'];
+  const email = req.headers['x-clerk-email'];
+  const headerName = req.headers['x-clerk-name'];
+  const fallbackName = email?.split('@')?.[0] || 'Yugent User';
+  const name = headerName || fallbackName;
+
+  return { clerkUserId, email, name };
+};
+
+const getOrCreateUser = async (req) => {
+  const { clerkUserId, email, name } = getClerkProfile(req);
+
+  if (!clerkUserId) {
+    const error = new Error('Unauthorized');
+    error.statusCode = 401;
+    throw error;
+  }
+
+  if (!email) {
+    const error = new Error('User profile information is missing.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  let user = await User.findOne({ clerkUserId });
+  if (!user) {
+    try {
+      return await User.create({ clerkUserId, email, name });
+    } catch (error) {
+      // A concurrent first login may win the unique clerkUserId index.
+      if (error?.code !== 11000) throw error;
+      user = await User.findOne({ clerkUserId });
+      if (!user) throw error;
+    }
+  }
+
+  if (user.email !== email || user.name !== name) {
+    user.email = email;
+    user.name = name;
+    await user.save();
+  }
+
+  if (!Number.isFinite(user.interviewCoin)) {
+    user.interviewCoin = DEFAULT_INTERVIEW_COINS;
+    await user.save();
+  }
+
+  return user;
+};
+
+const handleAuthError = (res, error) => {
+  if (error?.statusCode) {
+    return res.status(error.statusCode).json({ success: false, message: error.message });
+  }
+  return sendServerError(res, error);
+};
+
 export const login = async (req, res) => {
   try {
-    const clerkUserId = req.headers['x-clerk-user-id'];
-    const email = req.headers['x-clerk-email'];
-    const name = req.headers['x-clerk-name'];
-
-    if (!clerkUserId) return res.status(401).json({ success: false, message: 'Unauthorized' });
-    if (!email || !name) {
-      return res.status(400).json({ success: false, message: 'User profile information is missing.' });
-    }
-
-    let user = await User.findOne({ clerkUserId });
-    if (!user) {
-      try {
-        user = await User.create({ clerkUserId, email, name });
-      } catch (error) {
-        // A concurrent first login may win the unique clerkUserId index.
-        if (error?.code !== 11000) throw error;
-        user = await User.findOne({ clerkUserId });
-        if (!user) throw error;
-      }
-    } else if (user.email !== email || user.name !== name) {
-      // Keep the Clerk profile current without touching interviewCoin.
-      user.email = email;
-      user.name = name;
-      await user.save();
-    }
-
-    const existingSessionId = req.cookies?.session;
-    if (existingSessionId) {
-      const existingSession = await redis.get(`session:${existingSessionId}`);
-      if (existingSession && String(JSON.parse(existingSession).userId) === String(user._id)) {
-        await writeSession(existingSessionId, user);
-        return res.json({ success: true, user });
-      }
-    }
-
-    const sessionId = crypto.randomUUID();
-    await writeSession(sessionId, user);
-    res.cookie('session', sessionId, cookieOptions);
+    const user = await getOrCreateUser(req);
     return res.json({ success: true, user });
   } catch (error) {
-    return sendServerError(res, error);
+    return handleAuthError(res, error);
   }
 };
 
 export const me = async (req, res) => {
   try {
-    const clerkUserId = req.headers['x-clerk-user-id'];
-    if (!clerkUserId) return res.status(401).json({ success: false, message: 'Unauthorized' });
-    const sessionData = await getSessionUser(req);
-    if (!sessionData) return res.status(401).json({ success: false, message: 'Application session expired.' });
-    const user = await User.findOne({ clerkUserId });
-    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    const user = await getOrCreateUser(req);
     return res.json({ success: true, user });
   } catch (error) {
-    return sendServerError(res, error);
+    return handleAuthError(res, error);
   }
 };
 
 export const logout = async (req, res) => {
   try {
-    if (req.cookies?.session) await redis.del(`session:${req.cookies.session}`);
     res.clearCookie('session', cookieOptions);
     return res.json({ success: true, message: 'Logged out successfully' });
   } catch (error) {
@@ -103,56 +108,46 @@ export const logout = async (req, res) => {
   }
 };
 
-const getSessionUser = async (req) => {
-  const sessionId = req.cookies?.session;
-  if (!sessionId) return null;
-  const session = await redis.get(`session:${sessionId}`);
-  if (!session) return null;
-  const sessionData = JSON.parse(session);
-  // Bind the application session to the Clerk identity authenticated by the gateway.
-  if (!req.headers['x-clerk-user-id'] || sessionData.clerkUserId !== req.headers['x-clerk-user-id']) {
-    return null;
-  }
-  return sessionData;
-};
-
 export const useInterviewCoins = async (req, res) => {
   try {
-    const sessionData = await getSessionUser(req);
-    if (!sessionData) return res.status(401).json({ success: false, message: 'Application session expired.' });
     const { coins, action } = req.body;
-    if (!Number.isFinite(Number(coins)) || Number(coins) <= 0) {
+    const cost = ACTION_COIN_COSTS[action] ?? Number(coins);
+
+    if (!Number.isFinite(cost) || cost <= 0) {
       return res.status(400).json({ success: false, message: 'Valid coins are required' });
     }
-    const user = await User.findById(sessionData.userId);
-    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-    if (user.interviewCoin < Number(coins)) {
+
+    const user = await getOrCreateUser(req);
+    if (user.interviewCoin < cost) {
       return res.status(403).json({ success: false, message: 'Not enough interview coins', interviewCoin: user.interviewCoin });
     }
-    user.interviewCoin -= Number(coins);
+
+    user.interviewCoin -= cost;
     await user.save();
-    await writeSession(req.cookies.session, user);
-    return res.json({ success: true, message: 'Interview coins updated successfully', action, interviewCoin: user.interviewCoin });
+
+    return res.json({
+      success: true,
+      message: 'Interview coins updated successfully',
+      action,
+      coins: cost,
+      interviewCoin: user.interviewCoin,
+    });
   } catch (error) {
-    return sendServerError(res, error);
+    return handleAuthError(res, error);
   }
 };
 
 export const addCoins = async (req, res) => {
   try {
-    const sessionData = await getSessionUser(req);
-    if (!sessionData) return res.status(401).json({ success: false, message: 'Application session expired.' });
     const { coins } = req.body;
     if (!Number.isFinite(Number(coins)) || Number(coins) <= 0) {
       return res.status(400).json({ success: false, message: 'Valid coins are required' });
     }
-    const user = await User.findById(sessionData.userId);
-    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    const user = await getOrCreateUser(req);
     user.interviewCoin += Number(coins);
     await user.save();
-    await writeSession(req.cookies.session, user);
     return res.json({ success: true, message: 'Coins added successfully', interviewCoin: user.interviewCoin });
   } catch (error) {
-    return sendServerError(res, error);
+    return handleAuthError(res, error);
   }
 };

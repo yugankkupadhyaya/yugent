@@ -1,5 +1,7 @@
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { DashboardPerformance } from '@/components/dashboard/DashboardPerformance';
+import { DashboardResumeBuilderCard } from '@/components/dashboard/DashboardResumeBuilderCard';
+import { DashboardResumeCard } from '@/components/dashboard/DashboardResumeCard';
 import { DashboardStats } from '@/components/dashboard/DashboardStats';
 
 /**
@@ -12,6 +14,10 @@ export function DashboardPage({ user, stats, history }) {
     <DashboardLayout user={user}>
       <div className="space-y-11 sm:space-y-14">
         <DashboardStats stats={stats} />
+        <div className="grid gap-4 lg:grid-cols-2">
+          <DashboardResumeCard />
+          <DashboardResumeBuilderCard />
+        </div>
         <DashboardPerformance history={history} />
       </div>
     </DashboardLayout>

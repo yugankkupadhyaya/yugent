@@ -1,30 +1,30 @@
 import { useEffect } from 'react';
 import { useAuth } from '@clerk/react';
+import { Toaster } from 'sonner';
 import { AppRoutes } from './app/routes/AppRoutes';
 import { applyTheme, getStoredTheme } from './lib/theme';
-import api, { setClerkTokenProvider } from './utils/axios';
+import { setClerkTokenProvider } from './utils/axios';
 
-function AuthSessionBridge() {
-  const { getToken, isLoaded, isSignedIn } = useAuth();
+function AuthSessionBridge({ children }) {
+  const { getToken, isLoaded } = useAuth();
 
   useEffect(() => {
+    if (!isLoaded) return undefined;
+
     setClerkTokenProvider(getToken);
-  }, [getToken]);
 
-  useEffect(() => {
-    if (!isLoaded || !isSignedIn) return undefined;
+    return () => setClerkTokenProvider(undefined);
+  }, [getToken, isLoaded]);
 
-    let cancelled = false;
-    api.post('/api/auth/login').catch((error) => {
-      if (!cancelled) console.error('Unable to initialize application session:', error);
-    });
+  if (!isLoaded) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-background px-6 text-sm text-muted-foreground">
+        Preparing your secure session...
+      </main>
+    );
+  }
 
-    return () => {
-      cancelled = true;
-    };
-  }, [isLoaded, isSignedIn]);
-
-  return null;
+  return children;
 }
 
 function App() {
@@ -34,8 +34,21 @@ function App() {
 
   return (
     <>
-      <AuthSessionBridge />
-      <AppRoutes />
+      <AuthSessionBridge>
+        <AppRoutes />
+      </AuthSessionBridge>
+      <Toaster
+        richColors
+        closeButton
+        duration={3000}
+        position="top-right"
+        swipeDirections={['right', 'top', 'bottom']}
+        toastOptions={{
+          classNames: {
+            toast: 'cursor-grab active:cursor-grabbing',
+          },
+        }}
+      />
     </>
   );
 }

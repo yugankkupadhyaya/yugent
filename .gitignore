@@ -51,3 +51,6 @@ redis-data/
 # Temporary files
 *.tmp
 *.temp
+test.jsx
+
+

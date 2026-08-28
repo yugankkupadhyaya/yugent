@@ -1,0 +1,44 @@
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .resume-print-root,
+  .resume-print-root * {
+    visibility: visible !important;
+  }
+
+  .resume-print-root {
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    box-sizing: border-box !important;
+    width: 210mm !important;
+    min-height: 297mm !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    font-family: "Times New Roman", Times, serif !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .resume-print-actions {
+    display: none !important;
+  }
+}
+
+.resume-print-root {
+  font-family: "Times New Roman", Times, serif;
+}

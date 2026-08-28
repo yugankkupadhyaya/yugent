@@ -7,7 +7,6 @@ import { clerkClient, clerkMiddleware } from '@clerk/express';
 
 import { isAuth } from './middleware/isAuth.js';
 import { proxyWithHeaders } from './utils/proxyWithHeaders.js';
-import { getCurrentUser } from './controllers/user.controller.js';
 
 dotenv.config();
 
@@ -70,7 +69,6 @@ app.use('/api/interview', isAuth, proxyWithHeaders(process.env.INTERVIEW_SERVICE
 app.use('/api/roadmap', isAuth, proxyWithHeaders(process.env.ROADMAP_SERVICE_URL));
 
 app.use('/api/billing', isAuth, proxyWithHeaders(process.env.BILLING_SERVICE_URL));
-app.get('/api/me', isAuth, getCurrentUser);
 
 app.get(
   '/api/me',

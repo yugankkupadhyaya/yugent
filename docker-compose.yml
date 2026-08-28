@@ -74,6 +74,7 @@ services:
     environment:
       PORT: '8000'
       AUTH_SERVICE_URL: http://auth:8001
+      RESUME_SERVICE_URL: http://resume:8002
       FRONTEND_URL: http://localhost:5173
       REDIS_URL: redis://redis:6379
     ports:
@@ -83,6 +84,8 @@ services:
     depends_on:
       auth:
         condition: service_healthy
+      resume:
+        condition: service_healthy
     healthcheck:
       test:
         [
@@ -90,6 +93,38 @@ services:
           'node',
           '-e',
           "fetch('http://127.0.0.1:8000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+  resume:
+    build:
+      context: ./backend
+      dockerfile: services/resume/Dockerfile
+    container_name: yugent-resume
+    env_file:
+      - ./backend/services/resume/.env
+    environment:
+      PORT: '8002'
+      MONGODB_URL: mongodb://mongo:27017/Resume
+      REDIS_URL: redis://redis:6379
+    networks:
+      - yugent
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:8002/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
         ]
       interval: 5s
       timeout: 5s
@@ -112,6 +147,10 @@ services:
     depends_on:
       gateway:
         condition: service_healthy
+    volumes:
+      - ./frontend:/app
+      - frontend-node-modules-v4:/app/node_modules
+    command: ['sh', '-c', 'npm ci && npm run dev -- --host 0.0.0.0']
     healthcheck:
       test:
         [
@@ -133,3 +172,4 @@ networks:
 volumes:
   mongo-data:
     name: yugent-mongo-data
+  frontend-node-modules-v4:

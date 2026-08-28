@@ -1,6 +1,10 @@
 import { useAuth } from '@clerk/react';
 import { Navigate } from 'react-router-dom';
 import { LoaderCircle } from 'lucide-react';
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+
+import { fetchResume } from '@/store/resumeSlice';
 
 function AuthLoading() {
   return (
@@ -20,6 +24,21 @@ function AuthLoading() {
 
 export function ProtectedRoute({ children }) {
   const { isLoaded, isSignedIn } = useAuth();
+  const dispatch = useDispatch();
+  const resumeStatus = useSelector((state) => state.resume.status);
+  const resumeHasFetched = useSelector((state) => state.resume.hasFetched);
+
+  useEffect(() => {
+    if (
+      isLoaded &&
+      isSignedIn &&
+      !resumeHasFetched &&
+      resumeStatus !== 'loading' &&
+      resumeStatus !== 'uploading'
+    ) {
+      dispatch(fetchResume());
+    }
+  }, [dispatch, isLoaded, isSignedIn, resumeHasFetched, resumeStatus]);
 
   if (!isLoaded) {
     return <AuthLoading />;

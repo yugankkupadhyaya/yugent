@@ -6,6 +6,9 @@ export const proxyWithHeaders = (target, pathResolver, { includeGatewayAuth = fa
     proxyReqOptDecorator(opts, req) {
       opts.headers = opts.headers || {};
 
+      // Identity headers are gateway-owned. Never pass through values supplied
+      // by the browser.
+      delete opts.headers['x-user-id'];
       delete opts.headers['x-clerk-user-id'];
       delete opts.headers['x-clerk-email'];
       delete opts.headers['x-clerk-name'];

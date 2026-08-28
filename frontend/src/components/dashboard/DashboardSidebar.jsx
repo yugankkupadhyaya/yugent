@@ -5,6 +5,7 @@ import {
   Coins,
   CreditCard,
   FileText,
+  FilePenLine,
   LayoutDashboard,
   LogOut,
   Map,
@@ -46,9 +47,14 @@ const navigation = [
     icon: LayoutDashboard,
   },
   {
-    label: 'Resume Builder',
+    label: 'Resume Analysis',
     to: '/resume',
     icon: FileText,
+  },
+  {
+    label: 'Resume Builder',
+    to: '/resume-builder',
+    icon: FilePenLine,
   },
   {
     label: 'Interview Practice',
