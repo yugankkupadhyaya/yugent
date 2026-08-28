@@ -7,6 +7,7 @@ import { clerkClient, clerkMiddleware } from '@clerk/express';
 
 import { isAuth } from './middleware/isAuth.js';
 import { proxyWithHeaders } from './utils/proxyWithHeaders.js';
+import { getCurrentUser } from './controllers/user.controller.js';
 
 dotenv.config();
 
