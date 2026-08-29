@@ -286,6 +286,36 @@ Interview Service status (current):
 
 ---
 
+## 10a. Roadmap Service
+
+Purpose:
+
+AI-generated personalized career learning roadmaps.
+
+LangGraph is used as the AI workflow/orchestration layer (roadmap generation, then a resource agent attaches learning links).
+
+Basic flow:
+
+Frontend
+→ Gateway
+→ Roadmap Service
+→ LangGraph
+→ AI-generated roadmap (role, target package, modules)
+→ resource agent attaches YouTube + documentation links
+→ MongoDB
+→ Redis cache
+
+Roadmap Service status (current):
+
+- Dockerized as the `roadmap` service (container `yugent-roadmap`) on port 8004, reached only through the Gateway at `/api/roadmap/*`. It is NOT exposed to the host.
+- Reuses the shared Redis client (`shared/redis/redis.js`) and the same Mongoose connection pattern as the Resume/Interview Services. Redis is best-effort cache only (`roadmaps:<clerkUserId>` for the user list, `roadmap:<clerkUserId>:<id>` for a single roadmap); Redis failures must not make successful MongoDB writes appear failed.
+- Identity follows the Yugent convention: the Gateway injects `x-clerk-user-id`; the controller derives ownership exclusively from that trusted header (never from request bodies or `x-user-id`). `userId` is stored as a String (Clerk User ID), not an ObjectId.
+- LLM uses Groq via `@langchain/groq`, model from `GROQ_MODEL` (defaults to `llama-3.3-70b-versatile`).
+- The resource agent calls the YouTube Data API (`YOUTUBE_API_KEY`); this is best-effort and degrades gracefully when the key is absent.
+- Frontend not yet implemented (deferred).
+
+---
+
 ## 11. LangGraph
 
 LangGraph controls the multi-step interview AI workflow.

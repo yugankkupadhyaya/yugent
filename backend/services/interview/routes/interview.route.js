@@ -3,6 +3,8 @@ import { getAllInterviews, getInterview, startInterview, submitAnswer } from "..
 
 const interviewRouter = express.Router()
 
+interviewRouter.get("/health", (_, res) => res.sendStatus(200))
+
 interviewRouter.post("/start",startInterview)
 
 interviewRouter.post("/answer",submitAnswer)
