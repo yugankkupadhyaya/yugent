@@ -6,6 +6,7 @@ import ResumeBuilderPage from '@/pages/ResumeBuilderPage';
 import ResumePage from '@/pages/ResumePage';
 import SignInPage from '@/pages/SignInPage';
 import { InterviewPage } from '@/pages/InterviewPage';
+import { RoadmapPage } from '@/pages/RoadmapPage';
 import { ProtectedRoute } from './AuthRoute';
 import { PublicRoute } from './PublicRoutes';
 export function AppRoutes() {
@@ -61,6 +62,15 @@ export function AppRoutes() {
         element={
           <ProtectedRoute>
             <InterviewPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/roadmap"
+        element={
+          <ProtectedRoute>
+            <RoadmapPage />
           </ProtectedRoute>
         }
       />
