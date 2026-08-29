@@ -1,15 +1,30 @@
+import { useEffect, useState } from 'react';
+
+import api from '@/utils/axios';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { DashboardPerformance } from '@/components/dashboard/DashboardPerformance';
 import { DashboardResumeBuilderCard } from '@/components/dashboard/DashboardResumeBuilderCard';
 import { DashboardResumeCard } from '@/components/dashboard/DashboardResumeCard';
 import { DashboardStats } from '@/components/dashboard/DashboardStats';
 
-/**
- * `stats` and `history` are deliberately passed through as route-level inputs.
- * The frontend currently exposes no dashboard API, so this keeps the eventual
- * API adapter isolated without presenting fabricated career data to a user.
- */
-export function DashboardPage({ user, stats, history }) {
+export function DashboardPage({ user }) {
+  const [stats, setStats] = useState(undefined);
+
+  useEffect(() => {
+    let active = true;
+    api
+      .get('/api/interview/all')
+      .then(({ data }) => {
+        if (active && data?.success) setStats(data.stats);
+      })
+      .catch(() => {
+        /* Dashboard stats are non-critical; keep cards empty on failure. */
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <DashboardLayout user={user}>
       <div className="space-y-11 sm:space-y-14">
@@ -18,7 +33,7 @@ export function DashboardPage({ user, stats, history }) {
           <DashboardResumeCard />
           <DashboardResumeBuilderCard />
         </div>
-        <DashboardPerformance history={history} />
+        <DashboardPerformance />
       </div>
     </DashboardLayout>
   );

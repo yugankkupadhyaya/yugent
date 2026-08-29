@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useUser } from '@clerk/react';
 import { motion } from 'motion/react';
 import {
@@ -17,6 +17,8 @@ import {
 import { toast } from 'sonner';
 
 import api from '@/utils/axios';
+import { spendCoins } from '@/store/userSlice';
+import { INTERVIEW_START_COST } from '@/lib/coin-costs';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import {
@@ -64,6 +66,7 @@ const INTERVIEW_SESSION_KEY = 'yugent_interview_session';
 export function InterviewPage() {
   const { user: clerkUser } = useUser();
   const resume = useSelector((state) => state.resume.analysis);
+  const dispatch = useDispatch();
 
   const [phase, setPhase] = useState('setup');
   const [role, setRole] = useState('');
@@ -96,6 +99,19 @@ export function InterviewPage() {
 
     if (useResume && !resume) {
       toast.error('Analyze your resume first, or turn off resume mode.');
+      return;
+    }
+
+    try {
+      await dispatch(
+        spendCoins({ action: 'start-interview', coins: INTERVIEW_START_COST })
+      ).unwrap();
+    } catch (error) {
+      const message =
+        (typeof error === 'string' && error) ||
+        error?.message ||
+        'Not enough interview coins to start an interview.';
+      toast.error(message);
       return;
     }
 

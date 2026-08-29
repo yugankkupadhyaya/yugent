@@ -8,6 +8,7 @@ const ACTION_COIN_COSTS = {
   'resume-analysis': 25,
   'resume-builder-download': 10,
   'download-pdf': 10,
+  'start-interview': 20,
 };
 
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days

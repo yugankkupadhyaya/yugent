@@ -1,3 +1,4 @@
 export const RESUME_ANALYSIS_COST = 25;
 export const RESUME_BUILDER_DOWNLOAD_COST = 10;
+export const INTERVIEW_START_COST = 20;
 
