@@ -1,12 +1,19 @@
 import { useEffect } from 'react';
 import { useAuth } from '@clerk/react';
+import { useDispatch } from 'react-redux';
 import { Toaster } from 'sonner';
 import { AppRoutes } from './app/routes/AppRoutes';
 import { applyTheme, getStoredTheme } from './lib/theme';
 import { setClerkTokenProvider } from './utils/axios';
+import { clearResumeSession, hydrateForUser } from './store/resumeSlice';
+import {
+  loadStoredAnalyzedResume,
+  loadStoredGeneratedResume,
+} from './store/resumeStorage';
 
 function AuthSessionBridge({ children }) {
-  const { getToken, isLoaded } = useAuth();
+  const { getToken, isLoaded, isSignedIn, userId } = useAuth();
+  const dispatch = useDispatch();
 
   useEffect(() => {
     if (!isLoaded) return undefined;
@@ -15,6 +22,27 @@ function AuthSessionBridge({ children }) {
 
     return () => setClerkTokenProvider(undefined);
   }, [getToken, isLoaded]);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    if (isSignedIn && userId) {
+      const analysis = loadStoredAnalyzedResume(userId);
+      const generatedPayload = loadStoredGeneratedResume(userId);
+
+      dispatch(
+        hydrateForUser({
+          userId,
+          analysis,
+          generated: generatedPayload.data,
+          builderStep: generatedPayload.currentStep,
+          showPreview: generatedPayload.showPreview,
+        }),
+      );
+    } else if (!isSignedIn) {
+      dispatch(clearResumeSession());
+    }
+  }, [dispatch, isLoaded, isSignedIn, userId]);
 
   if (!isLoaded) {
     return (

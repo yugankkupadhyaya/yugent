@@ -1,4 +1,6 @@
+import crypto from 'crypto';
 import User from '../model/user.model.js';
+import redis from '../../../shared/redis/redis.js';
 
 const DEFAULT_INTERVIEW_COINS = 150;
 
@@ -8,10 +10,55 @@ const ACTION_COIN_COSTS = {
   'download-pdf': 10,
 };
 
+const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
+const SESSION_COOKIE = 'session';
+const SESSION_PREFIX = 'session:';
+
 const cookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
   sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+};
+
+const sessionKey = (sessionId) => `${SESSION_PREFIX}${sessionId}`;
+
+const buildSessionPayload = (user) => ({
+  userId: user._id.toString(),
+  name: user.name,
+  email: user.email,
+  interviewCoin: user.interviewCoin,
+});
+
+const createSession = async (user) => {
+  const sessionId = crypto.randomUUID();
+  const payload = buildSessionPayload(user);
+  await redis.set(sessionKey(sessionId), JSON.stringify(payload), 'EX', SESSION_TTL_SECONDS);
+  return { sessionId, payload };
+};
+
+const refreshSession = async (sessionId, user) => {
+  const payload = buildSessionPayload(user);
+  await redis.set(sessionKey(sessionId), JSON.stringify(payload), 'EX', SESSION_TTL_SECONDS);
+  return payload;
+};
+
+const getSession = async (req) => {
+  const sessionId = req.cookies?.[SESSION_COOKIE];
+  if (!sessionId) return null;
+  try {
+    const raw = await redis.get(sessionKey(sessionId));
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};
+
+const setSessionCookie = (res, sessionId) => {
+  res.cookie(SESSION_COOKIE, sessionId, {
+    ...cookieOptions,
+    maxAge: SESSION_TTL_SECONDS * 1000,
+  });
 };
 
 const sendServerError = (res, error) => {
@@ -84,7 +131,9 @@ const handleAuthError = (res, error) => {
 export const login = async (req, res) => {
   try {
     const user = await getOrCreateUser(req);
-    return res.json({ success: true, user });
+    const { sessionId, payload } = await createSession(user);
+    setSessionCookie(res, sessionId);
+    return res.json({ success: true, user: payload });
   } catch (error) {
     return handleAuthError(res, error);
   }
@@ -93,7 +142,16 @@ export const login = async (req, res) => {
 export const me = async (req, res) => {
   try {
     const user = await getOrCreateUser(req);
-    return res.json({ success: true, user });
+    const sessionId = req.cookies?.[SESSION_COOKIE];
+    const existing = sessionId ? await getSession(req) : null;
+    if (existing) {
+      await refreshSession(sessionId, user);
+    } else {
+      const { sessionId: newSessionId, payload } = await createSession(user);
+      setSessionCookie(res, newSessionId);
+      return res.json({ success: true, user: payload });
+    }
+    return res.json({ success: true, user: buildSessionPayload(user) });
   } catch (error) {
     return handleAuthError(res, error);
   }
@@ -101,7 +159,15 @@ export const me = async (req, res) => {
 
 export const logout = async (req, res) => {
   try {
-    res.clearCookie('session', cookieOptions);
+    const sessionId = req.cookies?.[SESSION_COOKIE];
+    if (sessionId) {
+      try {
+        await redis.del(sessionKey(sessionId));
+      } catch (error) {
+        console.error('Failed to delete session from Redis:', error?.message || error);
+      }
+    }
+    res.clearCookie(SESSION_COOKIE, cookieOptions);
     return res.json({ success: true, message: 'Logged out successfully' });
   } catch (error) {
     return sendServerError(res, error);
@@ -125,6 +191,11 @@ export const useInterviewCoins = async (req, res) => {
     user.interviewCoin -= cost;
     await user.save();
 
+    const sessionId = req.cookies?.[SESSION_COOKIE];
+    if (sessionId) {
+      await refreshSession(sessionId, user);
+    }
+
     return res.json({
       success: true,
       message: 'Interview coins updated successfully',
@@ -146,6 +217,12 @@ export const addCoins = async (req, res) => {
     const user = await getOrCreateUser(req);
     user.interviewCoin += Number(coins);
     await user.save();
+
+    const sessionId = req.cookies?.[SESSION_COOKIE];
+    if (sessionId) {
+      await refreshSession(sessionId, user);
+    }
+
     return res.json({ success: true, message: 'Coins added successfully', interviewCoin: user.interviewCoin });
   } catch (error) {
     return handleAuthError(res, error);

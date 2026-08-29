@@ -5,7 +5,7 @@ const tokenProviderWaiters = new Set();
 const TOKEN_PROVIDER_WAIT_MS = 5000;
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_URL,
+  baseURL: import.meta.env?.VITE_BACKEND_URL,
   withCredentials: true,
 });
 

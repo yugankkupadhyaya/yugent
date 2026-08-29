@@ -5,6 +5,19 @@ import Interview from "../models/interview.model.js";
 const trustedUserId = (req) => req.headers["x-clerk-user-id"];
 const validUserId = (userId) => typeof userId === "string" && userId.trim().length > 0;
 
+const cacheGet = async (key) => {
+    try { return await redis.get(key); }
+    catch (error) { console.error("Interview cache read failed:", error.message); return null; }
+};
+const cacheSet = async (key, value) => {
+    try { await redis.set(key, value); }
+    catch (error) { console.error("Interview cache write failed:", error.message); }
+};
+const cacheDelete = async (key) => {
+    try { await redis.del(key); }
+    catch (error) { console.error("Interview cache invalidation failed:", error.message); }
+};
+
 
 export const startInterview = async (req, res) => {
     try {
@@ -62,7 +75,7 @@ export const startInterview = async (req, res) => {
             status: "in-progress",
         })
 
-        await redis.del(`interviews:${userId}`)
+        await cacheDelete(`interviews:${userId}`)
 
         return res.status(200).json({
             success: true,
@@ -188,7 +201,7 @@ export const submitAnswer = async (req, res) => {
 
             await interview.save()
 
-            await redis.del(`interviews:${userId}`)
+            await cacheDelete(`interviews:${userId}`)
 
             return res.status(200).json({
 
@@ -207,7 +220,7 @@ export const submitAnswer = async (req, res) => {
 
         await interview.save()
 
-        await redis.del(`interviews:${userId}`)
+        await cacheDelete(`interviews:${userId}`)
 
         return res.status(200).json({
 
@@ -294,7 +307,7 @@ export const getAllInterviews = async (req, res) => {
             });
         }
 
-        const cache = await redis.get(`interviews:${userId}`)
+        const cache = await cacheGet(`interviews:${userId}`)
 
         if (cache) {
             console.log("✅ Data served from Redis")
@@ -441,7 +454,7 @@ export const getAllInterviews = async (req, res) => {
                 hrCount,
             }
 
-            await redis.set(`interviews:${userId}`, JSON.stringify(payload), "EX", 600)
+            await cacheSet(`interviews:${userId}`, JSON.stringify(payload), "EX", 600)
 
 
             return res.status(200).json(payload);

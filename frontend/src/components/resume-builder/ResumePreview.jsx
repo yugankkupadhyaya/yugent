@@ -148,7 +148,7 @@ function EducationItem({ item, index }) {
   );
 }
 
-export function ResumePreview({ data, onBack }) {
+export function ResumePreview({ data, onBack, onDownload }) {
   const skills = splitSkills(data.skills);
   const halfList = Math.ceil(skills.length / 2);
   const skillColumns = [skills.slice(0, halfList), skills.slice(halfList)];
@@ -188,7 +188,7 @@ export function ResumePreview({ data, onBack }) {
             <ArrowLeft className="size-4" />
             Edit
           </Button>
-          <Button type="button" onClick={() => window.print()}>
+          <Button type="button" onClick={onDownload}>
             <Download className="size-4" />
             Download PDF
           </Button>

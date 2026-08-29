@@ -1,20 +1,13 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
-import api from '@/utils/axios';
+import api from '../utils/axios.js';
+import initialResumeBuilderData from '../components/resume-builder/initialData.js';
+import { LEGACY_ANALYZED_KEY } from './resumeStorage.js';
 
-const STORAGE_KEY = 'yugent.resume.analysis';
+const STORAGE_KEY = LEGACY_ANALYZED_KEY;
 
 function getErrorMessage(error, fallback) {
   return error.response?.data?.message || error.message || fallback;
-}
-
-function getInitialAnalysis() {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : null;
-  } catch {
-    return null;
-  }
 }
 
 export const fetchResume = createAsyncThunk(
@@ -57,21 +50,82 @@ export const uploadResume = createAsyncThunk(
   },
 );
 
+const initialState = {
+  activeUserId: null,
+  isHydrated: false,
+  analysis: null,
+  status: 'idle',
+  error: null,
+  hasFetched: false,
+  lastFetchedAt: null,
+  generated: initialResumeBuilderData,
+  builderStep: 1,
+  showPreview: false,
+};
+
 const resumeSlice = createSlice({
   name: 'resume',
-  initialState: {
-    analysis: getInitialAnalysis(),
-    status: 'idle',
-    error: null,
-    hasFetched: false,
-    lastFetchedAt: null,
-  },
+  initialState,
   reducers: {
+    hydrateForUser: (state, action) => {
+      const {
+        userId,
+        analysis,
+        generated,
+        builderStep,
+        showPreview,
+      } = action.payload || {};
+
+      state.activeUserId = userId || null;
+      state.isHydrated = true;
+
+      if (analysis) {
+        state.analysis = analysis;
+      }
+
+      if (generated) {
+        state.generated = { ...initialResumeBuilderData, ...generated };
+      }
+
+      if (Number.isInteger(builderStep)) {
+        state.builderStep = builderStep;
+      }
+
+      if (typeof showPreview === 'boolean') {
+        state.showPreview = showPreview;
+      }
+    },
+    clearResumeSession: (state) => {
+      state.activeUserId = null;
+      state.isHydrated = false;
+      state.analysis = null;
+      state.status = 'idle';
+      state.error = null;
+      state.hasFetched = false;
+      state.lastFetchedAt = null;
+      state.generated = initialResumeBuilderData;
+      state.builderStep = 1;
+      state.showPreview = false;
+    },
     clearAnalysis: (state) => {
       state.analysis = null;
       state.status = 'idle';
       state.error = null;
       state.hasFetched = true;
+    },
+    updateGeneratedResume: (state, action) => {
+      state.generated = action.payload;
+    },
+    setBuilderStep: (state, action) => {
+      state.builderStep = action.payload;
+    },
+    setShowPreview: (state, action) => {
+      state.showPreview = Boolean(action.payload);
+    },
+    resetGeneratedResume: (state) => {
+      state.generated = initialResumeBuilderData;
+      state.builderStep = 1;
+      state.showPreview = false;
     },
   },
   extraReducers: (builder) => {
@@ -82,9 +136,13 @@ const resumeSlice = createSlice({
       })
       .addCase(fetchResume.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        state.analysis = action.payload;
         state.hasFetched = true;
         state.lastFetchedAt = Date.now();
+
+        // Preserve client-side hydrated analysis if the server returns 404/null
+        if (action.payload) {
+          state.analysis = action.payload;
+        }
       })
       .addCase(fetchResume.rejected, (state, action) => {
         state.status = 'failed';
@@ -108,7 +166,16 @@ const resumeSlice = createSlice({
   },
 });
 
-export const { clearAnalysis } = resumeSlice.actions;
+export const {
+  hydrateForUser,
+  clearResumeSession,
+  clearAnalysis,
+  updateGeneratedResume,
+  setBuilderStep,
+  setShowPreview,
+  resetGeneratedResume,
+} = resumeSlice.actions;
+
 export default resumeSlice.reducer;
 
 export { STORAGE_KEY };

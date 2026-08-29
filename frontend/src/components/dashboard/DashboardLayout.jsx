@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
@@ -10,9 +11,11 @@ import './dashboard.css';
 
 export function DashboardLayout({ children, user }) {
   const dispatch = useDispatch();
+  const location = useLocation();
   const currentUser = useSelector((state) => state.user.current);
   const userStatus = useSelector((state) => state.user.status);
   const dashboardUser = user ?? currentUser;
+  const hideSidebar = location.pathname !== '/dashboard';
 
   useEffect(() => {
     if (!dashboardUser && userStatus === 'idle') {
@@ -27,10 +30,10 @@ export function DashboardLayout({ children, user }) {
         '--sidebar-width-icon': '3.5rem',
       }}
     >
-      <DashboardSidebar user={dashboardUser} />
+      {!hideSidebar && <DashboardSidebar user={dashboardUser} />}
 
       <SidebarInset className="dashboard-shell min-h-screen overflow-x-hidden bg-background">
-        <DashboardHeader user={dashboardUser} />
+        <DashboardHeader user={dashboardUser} hideSidebar={hideSidebar} />
 
         <main className="relative z-10 min-w-0 px-5 py-7 sm:px-8 sm:py-9 lg:px-10 lg:py-10">
           <div className="mx-auto max-w-[1440px]">{children}</div>

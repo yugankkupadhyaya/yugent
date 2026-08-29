@@ -1,15 +1,21 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { ArrowLeft, ArrowRight, Eye, FileText, RotateCcw } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import ResumeBuilderForm from '@/components/resume-builder/ResumeBuilderForm';
 import ResumePreview from '@/components/resume-builder/ResumePreview';
-import initialResumeBuilderData from '@/components/resume-builder/initialData';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-
-const STORAGE_KEY = 'yugent.resume.builder.draft';
+import {
+  resetGeneratedResume,
+  setBuilderStep,
+  setShowPreview as setShowPreviewAction,
+  updateGeneratedResume,
+} from '@/store/resumeSlice';
+import { spendCoins } from '@/store/userSlice';
 
 const STEPS = [
   { step: 1, title: 'Personal Information', subtitle: 'Basic contact details and professional links.' },
@@ -20,19 +26,26 @@ const STEPS = [
   { step: 6, title: 'Education', subtitle: 'Academic background and credentials.' },
 ];
 
-function loadDraft() {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? { ...initialResumeBuilderData, ...JSON.parse(stored) } : initialResumeBuilderData;
-  } catch {
-    return initialResumeBuilderData;
-  }
-}
-
 export function ResumeBuilderPage() {
-  const [currentStep, setCurrentStep] = useState(1);
-  const [data, setData] = useState(loadDraft);
-  const [showPreview, setShowPreview] = useState(false);
+  const dispatch = useDispatch();
+  const data = useSelector((state) => state.resume.generated);
+  const currentStep = useSelector((state) => state.resume.builderStep);
+  const showPreview = useSelector((state) => state.resume.showPreview);
+
+  const setData = (nextDataOrFn) => {
+    const nextData = typeof nextDataOrFn === 'function' ? nextDataOrFn(data) : nextDataOrFn;
+    dispatch(updateGeneratedResume(nextData));
+  };
+
+  const setCurrentStep = (nextStepOrFn) => {
+    const nextStep = typeof nextStepOrFn === 'function' ? nextStepOrFn(currentStep) : nextStepOrFn;
+    dispatch(setBuilderStep(nextStep));
+  };
+
+  const setShowPreview = (nextValOrFn) => {
+    const nextVal = typeof nextValOrFn === 'function' ? nextValOrFn(showPreview) : nextValOrFn;
+    dispatch(setShowPreviewAction(nextVal));
+  };
 
   const activeStep = useMemo(
     () => STEPS.find((item) => item.step === currentStep) ?? STEPS[0],
@@ -41,25 +54,23 @@ export function ResumeBuilderPage() {
   const progress = Math.round((currentStep / STEPS.length) * 100);
   const isLastStep = currentStep === STEPS.length;
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch {
-      // Draft persistence is best effort.
-    }
-  }, [data]);
-
   const resetDraft = () => {
-    setData(initialResumeBuilderData);
-    setCurrentStep(1);
-    setShowPreview(false);
-    localStorage.removeItem(STORAGE_KEY);
+    dispatch(resetGeneratedResume());
+  };
+
+  const handleDownload = async () => {
+    try {
+      await dispatch(spendCoins({ action: 'resume-builder-download' })).unwrap();
+      window.print();
+    } catch (message) {
+      toast.error(message || 'Not enough coins to download the resume.');
+    }
   };
 
   return (
     <DashboardLayout>
       {showPreview ? (
-        <ResumePreview data={data} onBack={() => setShowPreview(false)} />
+        <ResumePreview data={data} onBack={() => setShowPreview(false)} onDownload={handleDownload} />
       ) : (
         <div className="mx-auto max-w-4xl space-y-8">
           <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">

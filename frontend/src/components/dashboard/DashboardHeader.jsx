@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useUser } from '@clerk/react';
-import { Moon, Sun } from 'lucide-react';
+import { ArrowLeft, Moon, Sun } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -11,9 +12,10 @@ function getFirstName(user) {
   return user?.firstName || fullName?.trim().split(/\s+/)[0] || '';
 }
 
-export function DashboardHeader({ user }) {
+export function DashboardHeader({ user, hideSidebar }) {
   const [theme, setTheme] = useState(getStoredTheme);
   const { user: clerkUser } = useUser();
+  const navigate = useNavigate();
   const firstName = getFirstName(user) || getFirstName(clerkUser);
 
   function toggleTheme() {
@@ -26,7 +28,20 @@ export function DashboardHeader({ user }) {
     <header className="relative z-10 border-b border-border/70 px-5 py-5 sm:px-8 sm:py-6 lg:px-10">
       <div className="mx-auto max-w-[1440px]">
         <div className="flex items-center justify-between gap-4">
-          <SidebarTrigger className="size-9 rounded-md border border-border bg-background text-muted-foreground shadow-none hover:bg-accent hover:text-foreground" />
+          {hideSidebar ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/dashboard')}
+              aria-label="Back to dashboard"
+              className="size-9 rounded-md border border-border bg-background text-muted-foreground shadow-none hover:bg-accent hover:text-foreground"
+            >
+              <ArrowLeft className="size-4" />
+            </Button>
+          ) : (
+            <SidebarTrigger className="size-9 rounded-md border border-border bg-background text-muted-foreground shadow-none hover:bg-accent hover:text-foreground" />
+          )}
           <Button
             type="button"
             variant="ghost"

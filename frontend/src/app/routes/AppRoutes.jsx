@@ -5,6 +5,7 @@ import { DashboardPage } from '@/pages/DashboardPage';
 import ResumeBuilderPage from '@/pages/ResumeBuilderPage';
 import ResumePage from '@/pages/ResumePage';
 import SignInPage from '@/pages/SignInPage';
+import { InterviewPage } from '@/pages/InterviewPage';
 import { ProtectedRoute } from './AuthRoute';
 import { PublicRoute } from './PublicRoutes';
 export function AppRoutes() {
@@ -51,6 +52,15 @@ export function AppRoutes() {
         element={
           <ProtectedRoute>
             <ResumeBuilderPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/interview"
+        element={
+          <ProtectedRoute>
+            <InterviewPage />
           </ProtectedRoute>
         }
       />

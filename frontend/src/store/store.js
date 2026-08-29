@@ -1,22 +1,16 @@
 import { configureStore } from '@reduxjs/toolkit';
 
-import resumeSlice, { STORAGE_KEY } from './resumeSlice';
-import userSlice from './userSlice';
+import resumeSlice from './resumeSlice.js';
+import userSlice from './userSlice.js';
+import { resumePersistenceMiddleware } from './resumeMiddleware.js';
 
 export const store = configureStore({
   reducer: {
     resume: resumeSlice,
     user: userSlice,
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware().concat(resumePersistenceMiddleware),
 });
 
-store.subscribe(() => {
-  try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(store.getState().resume.analysis),
-    );
-  } catch {
-    // Persistence is best effort; the server remains the source of truth.
-  }
-});
+export default store;

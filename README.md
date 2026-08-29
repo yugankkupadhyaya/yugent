@@ -29,8 +29,12 @@ Implemented so far:
 * Protected Resume route
 * Initial Resume Scorer frontend
 * shadcn/ui component architecture
+* Interview Service (LangGraph + MongoDB + Redis)
+* AI-powered HR / Technical interviews
+* Interview frontend at /interview
+* Interview Service dockerized behind the Gateway
 
-The Resume frontend is currently being refined into the final Yugent design.
+The Resume frontend is implemented in the final Yugent design, and the Interview frontend is built and wired through the Gateway.
 
 ---
 
@@ -55,9 +59,9 @@ Yugent follows a gateway-based microservice architecture.
              │                    │                    │
              ▼                    ▼                    ▼
       ┌─────────────┐      ┌─────────────┐      ┌─────────────┐
-      │ Auth Service│      │Resume Service│      │   Future    │
-      │   :8001     │      │    :8002     │      │  Services   │
-      └──────┬──────┘      └──────┬──────┘      └─────────────┘
+      │ Auth Service│      │Resume Service│      │Interview Svc│
+      │   :8001     │      │    :8002     │      │   :8003     │
+      └──────┬──────┘      └──────┬──────┘      └──────┬──────┘
              │                    │
              └──────────┬─────────┘
                         │
@@ -91,7 +95,8 @@ yugent/
 │   │   │   ├── LandingPage.jsx
 │   │   │   ├── SignInPage.jsx
 │   │   │   ├── DashboardPage.jsx
-│   │   │   └── ResumePage.jsx
+│   │   │   ├── ResumePage.jsx
+│   │   │   └── InterviewPage.jsx
 │   │   │
 │   │   ├── routes/
 │   │   │   ├── AppRoutes.jsx
@@ -116,6 +121,7 @@ yugent/
 │   ├── services/
 │   │   ├── auth/
 │   │   ├── resume/
+│   │   ├── interview/
 │   │   └── ...
 │   │
 │   └── shared/

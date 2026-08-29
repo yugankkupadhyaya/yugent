@@ -413,8 +413,9 @@ export function ResumePage() {
   const status = useSelector((state) => state.resume.status);
   const resume = useSelector((state) => state.resume.analysis);
   const hasFetched = useSelector((state) => state.resume.hasFetched);
+  const isHydrated = useSelector((state) => state.resume.isHydrated);
   const dispatch = useDispatch();
-  const loading = !resume && !hasFetched && (status === 'idle' || status === 'loading');
+  const loading = (!resume && !hasFetched && (status === 'idle' || status === 'loading')) || !isHydrated;
   const analyzing = status === 'uploading';
 
   const validateFile = (selectedFile) => {
