@@ -110,7 +110,7 @@ const interviewSchema = new mongoose.Schema(
             required: true,
         },
         useResume: {
-            type: Boolean,x
+            type: Boolean,
             default: false,
         },
 

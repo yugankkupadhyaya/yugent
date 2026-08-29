@@ -1,6 +1,5 @@
 import { Navbar } from '@/components/layout/navbar';
 import { PageShell } from '@/components/layout/page-shell';
-import { AboutSection } from '@/components/marketing/about/about-section';
 import { ContactSection } from '@/components/marketing/contact/contact-section';
 import { FeaturesSection } from '@/components/marketing/features/features-section';
 import { FinalCtaSection } from '@/components/marketing/final-cta/final-cta-section';
@@ -15,7 +14,6 @@ export function LandingPage() {
       <PageShell>
         <Navbar />
         <HeroSection />
-        <AboutSection />
         <FeaturesSection />
         <HowItWorksSection />
         <VisionSection />

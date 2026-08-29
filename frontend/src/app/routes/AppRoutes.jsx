@@ -7,8 +7,11 @@ import ResumePage from '@/pages/ResumePage';
 import SignInPage from '@/pages/SignInPage';
 import { InterviewPage } from '@/pages/InterviewPage';
 import { RoadmapPage } from '@/pages/RoadmapPage';
+import { BillingPage } from '@/pages/BillingPage';
+import { ContactPage } from '@/pages/ContactPage';
 import { ProtectedRoute } from './AuthRoute';
 import { PublicRoute } from './PublicRoutes';
+
 export function AppRoutes() {
   return (
     <Routes>
@@ -71,6 +74,23 @@ export function AppRoutes() {
         element={
           <ProtectedRoute>
             <RoadmapPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/billing"
+        element={
+          <ProtectedRoute>
+            <BillingPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/contact"
+        element={
+          <ProtectedRoute>
+            <ContactPage />
           </ProtectedRoute>
         }
       />

@@ -10,7 +10,7 @@ services:
       - yugent
     healthcheck:
       test: ['CMD-SHELL', "mongosh --quiet --eval 'db.adminCommand({ ping: 1 }).ok' | grep 1"]
-      interval: 5s
+      interval: 30s
       timeout: 5s
       retries: 12
       start_period: 10s

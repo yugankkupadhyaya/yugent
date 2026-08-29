@@ -8,7 +8,7 @@ import {
   FilePenLine,
   LayoutDashboard,
   LogOut,
-  Map,
+  Mail,
   MessageSquareText,
   MoreHorizontal,
   Plus,
@@ -62,14 +62,14 @@ const navigation = [
     icon: MessageSquareText,
   },
   {
-    label: 'Roadmap',
-    to: '/roadmap',
-    icon: Map,
-  },
-  {
     label: 'Billing',
     to: '/billing',
     icon: CreditCard,
+  },
+  {
+    label: 'Contact',
+    to: '/contact',
+    icon: Mail,
   },
 ];
 
